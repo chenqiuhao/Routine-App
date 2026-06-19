@@ -151,7 +151,7 @@ private func routineSnapshot(at date: Date, routines: [Routine]) -> RoutineSnaps
             remainingText: countdownString(seconds: remaining),
             startTimeText: timeString(minutes: current.startMinutes),
             endTimeText: timeString(minutes: current.endMinutes),
-            nextTitle: next.map { displayName(for: $0.routine) } ?? "无",
+            nextTitle: next.map { displayNameWithDuration(for: $0.routine) } ?? "无",
             tint: current.color.swiftUIColor
         )
     }
@@ -165,7 +165,7 @@ private func routineSnapshot(at date: Date, routines: [Routine]) -> RoutineSnaps
         remainingText: countdownString(seconds: next?.remaining ?? 0),
         startTimeText: "--:--",
         endTimeText: "--:--",
-        nextTitle: next.map { displayName(for: $0.routine) } ?? "无",
+        nextTitle: next.map { displayNameWithDuration(for: $0.routine) } ?? "无",
         tint: .secondary
     )
 }
@@ -207,6 +207,26 @@ private func timeString(minutes: Int) -> String {
 private func displayName(for routine: Routine) -> String {
     let trimmed = routine.name.trimmingCharacters(in: .whitespacesAndNewlines)
     return trimmed.isEmpty ? "新日程" : trimmed
+}
+
+private func displayNameWithDuration(for routine: Routine) -> String {
+    "\(displayName(for: routine)) \(durationText(minutes: routine.durationMinutes))"
+}
+
+private func durationText(minutes: Int) -> String {
+    if minutes < 60 {
+        return "\(minutes)min"
+    }
+
+    if minutes.isMultiple(of: 60) {
+        return "\(minutes / 60)h"
+    }
+
+    if minutes.isMultiple(of: 30) {
+        return String(format: "%.1fh", Double(minutes) / 60)
+    }
+
+    return "\(minutes / 60)h\(minutes % 60)min"
 }
 
 private extension Routine {

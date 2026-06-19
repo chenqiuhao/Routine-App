@@ -63,14 +63,6 @@ struct SettingsView: View {
                     }
                     .accessibilityLabel("添加日程")
                 }
-
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-
-                    Button("完成") {
-                        hideKeyboard()
-                    }
-                }
             }
         }
         .tint(.primary)

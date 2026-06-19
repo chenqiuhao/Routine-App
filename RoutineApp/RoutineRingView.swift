@@ -36,6 +36,8 @@ struct RoutineRingView: View {
                     .opacity(0.98)
                 }
 
+                InnerLabelGuideLayer(placements: labelPlacements, metrics: metrics, palette: palette)
+
                 TickLayer(metrics: metrics, palette: palette)
 
                 ForEach(0..<24, id: \.self) { hour in
@@ -176,6 +178,42 @@ private struct ArcRoutineNameLabel: View {
     }
 }
 
+private struct InnerLabelGuideLayer: View {
+    let placements: [RoutineLabelPlacement]
+    let metrics: DialMetrics
+    let palette: DialPalette
+
+    var body: some View {
+        Canvas { context, _ in
+            let center = CGPoint(x: metrics.center, y: metrics.center)
+
+            for placement in placements where placement.needsGuideLine(metrics: metrics) {
+                let lineReach = max(
+                    placement.fontSize * 1.1,
+                    placement.fontSize * CGFloat(max(placement.lines.count, 1)) * 0.58
+                )
+                let startRadius = placement.radius + lineReach + metrics.size * 0.008
+                let endRadius = metrics.innerRingRadius + metrics.ringWidth * 0.16
+
+                guard startRadius < endRadius else { continue }
+
+                let start = absolutePoint(center: center, radius: startRadius, angleDegrees: placement.centerAngle)
+                let end = absolutePoint(center: center, radius: endRadius, angleDegrees: placement.centerAngle)
+                var path = Path()
+                path.move(to: start)
+                path.addLine(to: end)
+
+                context.stroke(
+                    path,
+                    with: .color(palette.primaryText.opacity(0.22)),
+                    style: StrokeStyle(lineWidth: max(0.8, metrics.size * 0.0015), lineCap: .round)
+                )
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
 private struct RoutineArcShape: Shape {
     var startMinutes: Int
     var endMinutes: Int
@@ -220,6 +258,12 @@ private struct RoutineArcShape: Shape {
 
         path.closeSubpath()
         return path
+    }
+}
+
+private extension RoutineLabelPlacement {
+    func needsGuideLine(metrics: DialMetrics) -> Bool {
+        radius < metrics.labelRadius - metrics.size * 0.01
     }
 }
 
