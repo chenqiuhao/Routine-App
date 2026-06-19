@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 struct SettingsView: View {
     @Bindable var store: RoutineStore
     @Binding var themeMode: AppThemeMode
+    @Binding var liveActivityEnabled: Bool
     @State private var isImporting = false
     @State private var isExporting = false
     @State private var importErrorMessage: String?
@@ -23,10 +24,21 @@ struct SettingsView: View {
                     .onMove { source, destination in
                         store.move(from: source, to: destination)
                     }
+
+                    Button {
+                        store.resetColorsInOrder()
+                    } label: {
+                        Label("按顺序重设颜色", systemImage: "paintpalette")
+                    }
+                    .disabled(store.routines.isEmpty)
                 }
 
                 Section("外观") {
                     ThemeModeMenu(selection: $themeMode)
+                }
+
+                Section("锁屏") {
+                    Toggle("实时活动窗口", isOn: $liveActivityEnabled)
                 }
 
                 Section("数据") {
@@ -110,6 +122,7 @@ struct SettingsView: View {
             },
             set: { updatedRoutine in
                 guard let index = store.routines.firstIndex(where: { $0.id == id }) else { return }
+                guard store.routines[index] != updatedRoutine else { return }
                 store.routines[index] = updatedRoutine
             }
         )
@@ -325,5 +338,9 @@ private func hideKeyboard() {
 }
 
 #Preview {
-    SettingsView(store: RoutineStore(), themeMode: .constant(.system))
+    SettingsView(
+        store: RoutineStore(),
+        themeMode: .constant(.system),
+        liveActivityEnabled: .constant(false)
+    )
 }

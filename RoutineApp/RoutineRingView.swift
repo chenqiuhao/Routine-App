@@ -143,7 +143,6 @@ private struct RoutineLabelInfo {
     let midpointAngle: Double
     let normalizedAngle: Double
     let durationDegrees: Double
-    let characterCount: Int
     let longestLineCount: Int
 }
 
@@ -345,7 +344,6 @@ private func makeLabelPlacements(for routines: [Routine], metrics: DialMetrics) 
             midpointAngle: midpointAngle,
             normalizedAngle: normalizedDialDegrees(midpointAngle),
             durationDegrees: Double(routine.durationMinutes) / Double(minutesPerDay) * 360,
-            characterCount: max(routine.name.count, 1),
             longestLineCount: max(lines.map(\.count).max() ?? 1, 1)
         )
     }
@@ -365,7 +363,6 @@ private struct LabelCandidate {
     let outside: Bool
     let looseness: Double
     let fontScale: CGFloat
-    let priority: Double
 }
 
 private struct PlacedLabel {
@@ -395,20 +392,20 @@ private func bestPlacement(
 private func labelCandidates(for info: RoutineLabelInfo, metrics: DialMetrics) -> [LabelCandidate] {
     if isSideAngle(info.midpointAngle) {
         return [
-            LabelCandidate(radius: metrics.labelRadius, outside: false, looseness: 1.05, fontScale: 1.00, priority: 0),
-            LabelCandidate(radius: metrics.sideInnerLabelRadius, outside: false, looseness: 0.98, fontScale: 0.92, priority: 1),
-            LabelCandidate(radius: metrics.labelRadius, outside: false, looseness: 0.92, fontScale: 0.82, priority: 2),
-            LabelCandidate(radius: metrics.sideInnerLabelRadius, outside: false, looseness: 0.88, fontScale: 0.74, priority: 3),
-            LabelCandidate(radius: metrics.labelRadius, outside: false, looseness: 0.82, fontScale: 0.66, priority: 4),
-            LabelCandidate(radius: metrics.sideInnerLabelRadius, outside: false, looseness: 0.78, fontScale: 0.58, priority: 5)
+            LabelCandidate(radius: metrics.labelRadius, outside: false, looseness: 1.05, fontScale: 1.00),
+            LabelCandidate(radius: metrics.sideInnerLabelRadius, outside: false, looseness: 0.98, fontScale: 0.92),
+            LabelCandidate(radius: metrics.labelRadius, outside: false, looseness: 0.92, fontScale: 0.82),
+            LabelCandidate(radius: metrics.sideInnerLabelRadius, outside: false, looseness: 0.88, fontScale: 0.74),
+            LabelCandidate(radius: metrics.labelRadius, outside: false, looseness: 0.82, fontScale: 0.66),
+            LabelCandidate(radius: metrics.sideInnerLabelRadius, outside: false, looseness: 0.78, fontScale: 0.58)
         ]
     }
 
     return [
-        LabelCandidate(radius: metrics.labelRadius, outside: false, looseness: 1.10, fontScale: 1.00, priority: 0),
-        LabelCandidate(radius: metrics.outsideLabelRadius, outside: true, looseness: 1.65, fontScale: 0.96, priority: 1),
-        LabelCandidate(radius: metrics.labelRadius, outside: false, looseness: 0.96, fontScale: 0.84, priority: 2),
-        LabelCandidate(radius: metrics.outsideLabelRadius, outside: true, looseness: 1.35, fontScale: 0.78, priority: 3)
+        LabelCandidate(radius: metrics.labelRadius, outside: false, looseness: 1.10, fontScale: 1.00),
+        LabelCandidate(radius: metrics.outsideLabelRadius, outside: true, looseness: 1.65, fontScale: 0.96),
+        LabelCandidate(radius: metrics.labelRadius, outside: false, looseness: 0.96, fontScale: 0.84),
+        LabelCandidate(radius: metrics.outsideLabelRadius, outside: true, looseness: 1.35, fontScale: 0.78)
     ]
 }
 

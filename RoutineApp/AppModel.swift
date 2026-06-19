@@ -1,7 +1,10 @@
 import Foundation
+#if !WIDGET_EXTENSION
 import Observation
-import SwiftUI
 import UserNotifications
+#endif
+import SwiftUI
+import WidgetKit
 
 struct Routine: Identifiable, Codable, Equatable {
     var id: UUID
@@ -176,24 +179,295 @@ enum AppThemeMode: String, CaseIterable, Identifiable {
     }
 }
 
+enum RoutineSharedStorage {
+    static let appGroupIdentifier = "group.com.codex.routineapp"
+    static let routinesKey = "RoutineApp.routines.v1"
+    static let liveActivityEnabledKey = "RoutineApp.liveActivity.enabled"
+
+    private static let appGroupDefaults = UserDefaults(suiteName: appGroupIdentifier)
+    static let defaults: UserDefaults = appGroupDefaults ?? .standard
+
+    private static func registerDefaults() {
+        defaults.register(defaults: [liveActivityEnabledKey: false])
+    }
+
+    static func loadRoutines() -> [Routine] {
+        registerDefaults()
+
+        if let data = defaults.data(forKey: routinesKey),
+           let decoded = try? JSONDecoder().decode([Routine].self, from: data) {
+            return decoded
+        }
+
+        if let data = UserDefaults.standard.data(forKey: routinesKey),
+           let decoded = try? JSONDecoder().decode([Routine].self, from: data) {
+            save(decoded, reloadWidgets: false)
+            return decoded
+        }
+
+        save(sampleRoutines, reloadWidgets: false)
+        return sampleRoutines
+    }
+
+    static func loadLiveActivityEnabled() -> Bool {
+        registerDefaults()
+
+        if defaults.object(forKey: liveActivityEnabledKey) != nil {
+            return defaults.bool(forKey: liveActivityEnabledKey)
+        }
+
+        return UserDefaults.standard.bool(forKey: liveActivityEnabledKey)
+    }
+
+    static func saveLiveActivityEnabled(_ enabled: Bool) {
+        defaults.set(enabled, forKey: liveActivityEnabledKey)
+    }
+
+    static func save(_ routines: [Routine], reloadWidgets: Bool) {
+        guard let data = try? JSONEncoder().encode(routines) else { return }
+        defaults.set(data, forKey: routinesKey)
+        guard reloadWidgets else { return }
+        Self.reloadWidgets()
+    }
+
+    static func reloadWidgets() {
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    static let sampleRoutines: [Routine] = [
+        Routine(name: "睡觉", startMinutes: 22 * 60, endMinutes: 6 * 60, color: RoutineColor.defaultColor(at: 0)),
+        Routine(name: "跑步", startMinutes: 6 * 60, endMinutes: 8 * 60, color: RoutineColor.defaultColor(at: 1)),
+        Routine(name: "吃饭", startMinutes: 8 * 60, endMinutes: 9 * 60, color: RoutineColor.defaultColor(at: 2)),
+        Routine(name: "工作", startMinutes: 9 * 60, endMinutes: 14 * 60, color: RoutineColor.defaultColor(at: 4)),
+        Routine(name: "休息", startMinutes: 14 * 60, endMinutes: 16 * 60, color: RoutineColor.defaultColor(at: 9)),
+        Routine(name: "晚餐", startMinutes: 18 * 60, endMinutes: 19 * 60, color: RoutineColor.defaultColor(at: 11))
+    ]
+}
+
+struct RoutineStatusSnapshot: Codable, Hashable {
+    var title: String
+    var caption: String
+    var progress: Double
+    var remainingText: String
+    var remainingMinuteText: String
+    var compactRemainingMinuteText: String
+    var startTimeText: String
+    var endTimeText: String
+    var nextTitle: String
+    var tint: RoutineColor?
+    var startDate: Date?
+    var endDate: Date?
+
+    var tintColor: Color {
+        tint?.swiftUIColor ?? .secondary
+    }
+}
+
+func routineStatusSnapshot(at date: Date, routines: [Routine]) -> RoutineStatusSnapshot {
+    guard !routines.isEmpty else {
+        return RoutineStatusSnapshot(
+            title: "暂无日程",
+            caption: "当前",
+            progress: 0,
+            remainingText: "--:--:--",
+            remainingMinuteText: "--",
+            compactRemainingMinuteText: "--",
+            startTimeText: "--:--",
+            endTimeText: "--:--",
+            nextTitle: "无",
+            tint: nil,
+            startDate: nil,
+            endDate: nil
+        )
+    }
+
+    let seconds = secondsSinceStartOfDay(for: date)
+
+    if let current = routines.first(where: { $0.contains(daySecond: seconds) }) {
+        let elapsed = current.elapsedSeconds(at: seconds)
+        let duration = max(current.durationMinutes * 60, 1)
+        let remaining = max(duration - elapsed, 0)
+        let interval = activeInterval(for: current, containing: date)
+        let next = nextRoutine(after: seconds, routines: routines, excluding: current.id)
+
+        return RoutineStatusSnapshot(
+            title: routineDisplayName(for: current),
+            caption: "当前日程",
+            progress: min(max(Double(elapsed) / Double(duration), 0), 1),
+            remainingText: routineCountdownString(seconds: remaining),
+            remainingMinuteText: routineMinuteCountdownString(seconds: remaining),
+            compactRemainingMinuteText: routineCompactMinuteCountdownString(seconds: remaining),
+            startTimeText: routineTimeString(minutes: current.startMinutes),
+            endTimeText: routineTimeString(minutes: current.endMinutes),
+            nextTitle: next.map { routineDisplayNameWithDuration(for: $0.routine) } ?? "无",
+            tint: current.color,
+            startDate: interval?.start,
+            endDate: interval?.end
+        )
+    }
+
+    let next = nextRoutine(after: seconds, routines: routines)
+
+    return RoutineStatusSnapshot(
+        title: "空闲",
+        caption: next.map { "距离 \(routineDisplayName(for: $0.routine)) 开始" } ?? "当前",
+        progress: 0,
+        remainingText: routineCountdownString(seconds: next?.remaining ?? 0),
+        remainingMinuteText: routineMinuteCountdownString(seconds: next?.remaining ?? 0),
+        compactRemainingMinuteText: routineCompactMinuteCountdownString(seconds: next?.remaining ?? 0),
+        startTimeText: "--:--",
+        endTimeText: next.map { routineTimeString(minutes: $0.routine.startMinutes) } ?? "--:--",
+        nextTitle: next.map { routineDisplayNameWithDuration(for: $0.routine) } ?? "无",
+        tint: nil,
+        startDate: nil,
+        endDate: next.map { date.addingTimeInterval(TimeInterval($0.remaining)) }
+    )
+}
+
+func routineDisplayName(for routine: Routine) -> String {
+    let trimmed = routine.name.trimmingCharacters(in: .whitespacesAndNewlines)
+    return trimmed.isEmpty ? "新日程" : trimmed
+}
+
+func routineDisplayNameWithDuration(for routine: Routine) -> String {
+    "\(routineDisplayName(for: routine)) \(routineDurationText(minutes: routine.durationMinutes))"
+}
+
+func routineDurationText(minutes: Int) -> String {
+    if minutes < 60 {
+        return "\(minutes) min"
+    }
+
+    let hours = minutes / 60
+    let remainingMinutes = minutes % 60
+
+    if remainingMinutes == 0 {
+        return "\(hours) h"
+    }
+
+    return "\(hours) h \(remainingMinutes) min"
+}
+
+func routineTimeString(minutes: Int) -> String {
+    let normalized = minutes.normalizedDayMinute
+    return String(format: "%02d:%02d", normalized / 60, normalized % 60)
+}
+
+func routineCountdownInterval(startDate: Date?, endDate: Date, now: Date = .now) -> ClosedRange<Date>? {
+    let lowerBound = min(startDate ?? now, now)
+    let upperBound = max(endDate, now.addingTimeInterval(1))
+    guard lowerBound <= upperBound else { return nil }
+    return lowerBound...upperBound
+}
+
+private func nextRoutine(
+    after seconds: Int,
+    routines: [Routine],
+    excluding excludedID: Routine.ID? = nil
+) -> (routine: Routine, remaining: Int)? {
+    routines
+        .filter { $0.id != excludedID }
+        .map { routine in (routine: routine, remaining: secondsUntilStart(of: routine, from: seconds)) }
+        .min { $0.remaining < $1.remaining }
+}
+
+private func secondsSinceStartOfDay(for date: Date) -> Int {
+    let components = Calendar.current.dateComponents([.hour, .minute, .second], from: date)
+    return ((components.hour ?? 0) * 3600 + (components.minute ?? 0) * 60 + (components.second ?? 0)) % (minutesPerDay * 60)
+}
+
+private func secondsUntilStart(of routine: Routine, from seconds: Int) -> Int {
+    let startSeconds = routine.startMinutes.normalizedDayMinute * 60
+    let raw = startSeconds - seconds
+    return raw >= 0 ? raw : raw + minutesPerDay * 60
+}
+
+private func routineCountdownString(seconds: Int) -> String {
+    let hours = seconds / 3600
+    let minutes = (seconds % 3600) / 60
+    let seconds = seconds % 60
+    return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+}
+
+private func routineMinuteCountdownString(seconds: Int) -> String {
+    let minutes = remainingWholeMinutes(seconds: seconds)
+    return routineDurationText(minutes: minutes)
+}
+
+private func routineCompactMinuteCountdownString(seconds: Int) -> String {
+    let minutes = remainingWholeMinutes(seconds: seconds)
+    guard minutes >= 60 else { return "\(minutes) m" }
+
+    let hours = minutes / 60
+    let remainingMinutes = minutes % 60
+    return remainingMinutes == 0 ? "\(hours) h" : "\(hours) h \(remainingMinutes) m"
+}
+
+private func remainingWholeMinutes(seconds: Int) -> Int {
+    guard seconds > 0 else { return 0 }
+    return max(1, Int(ceil(Double(seconds) / 60.0)))
+}
+
+private func activeInterval(for routine: Routine, containing date: Date) -> (start: Date, end: Date)? {
+    let calendar = Calendar.current
+    let dayStart = calendar.startOfDay(for: date)
+    guard let startToday = calendar.date(byAdding: .minute, value: routine.startMinutes.normalizedDayMinute, to: dayStart) else {
+        return nil
+    }
+
+    let duration = TimeInterval(routine.durationMinutes * 60)
+    let candidates = [
+        startToday,
+        calendar.date(byAdding: .day, value: -1, to: startToday),
+        calendar.date(byAdding: .day, value: 1, to: startToday)
+    ].compactMap { $0 }
+
+    return candidates
+        .map { start in (start: start, end: start.addingTimeInterval(duration)) }
+        .first { date >= $0.start && date < $0.end }
+}
+
+extension Routine {
+    func contains(daySecond: Int) -> Bool {
+        let start = startMinutes.normalizedDayMinute * 60
+        let end = endMinutes.normalizedDayMinute * 60
+
+        if start == end {
+            return true
+        }
+
+        if start < end {
+            return daySecond >= start && daySecond < end
+        }
+
+        return daySecond >= start || daySecond < end
+    }
+
+    func elapsedSeconds(at daySecond: Int) -> Int {
+        let start = startMinutes.normalizedDayMinute * 60
+        let raw = daySecond - start
+        return raw >= 0 ? raw : raw + minutesPerDay * 60
+    }
+}
+
+#if !WIDGET_EXTENSION
 @Observable
 final class RoutineStore {
     var routines: [Routine] {
         didSet {
             save()
-            refreshNotifications()
+            scheduleExternalRefresh(previousRoutines: oldValue)
         }
     }
 
-    init() {
-        if let data = UserDefaults.standard.data(forKey: Self.defaultsKey),
-           let decoded = try? JSONDecoder().decode([Routine].self, from: data) {
-            routines = decoded
-        } else {
-            routines = Self.sampleRoutines
-        }
+    @ObservationIgnored private var externalRefreshTask: Task<Void, Never>?
 
-        refreshNotifications()
+    init() {
+        routines = RoutineSharedStorage.loadRoutines()
+
+        if routines.contains(where: \.notifies) {
+            scheduleNotificationRefresh(for: routines, after: 1_500_000_000)
+        }
     }
 
     func addRoutine() {
@@ -211,8 +485,25 @@ final class RoutineStore {
         )
     }
 
-    func remove(_ routine: Routine) {
-        routines.removeAll { $0.id == routine.id }
+    func resetColorsInOrder() {
+        var usedColorIdentifiers = Set<String>()
+        let recoloredRoutines = routines.enumerated().map { index, routine in
+            var updatedRoutine = routine
+            let color: RoutineColor
+
+            if RoutineColor.defaultPalette.indices.contains(index) {
+                color = RoutineColor.defaultPalette[index]
+            } else {
+                color = RoutineColor.generated(avoiding: usedColorIdentifiers)
+            }
+
+            usedColorIdentifiers.insert(color.id)
+            updatedRoutine.color = color
+            return updatedRoutine
+        }
+
+        guard recoloredRoutines != routines else { return }
+        routines = recoloredRoutines
     }
 
     func remove(atOffsets offsets: IndexSet) {
@@ -251,18 +542,47 @@ final class RoutineStore {
     }
 
     private func save() {
-        guard let data = try? JSONEncoder().encode(routines) else { return }
-        UserDefaults.standard.set(data, forKey: Self.defaultsKey)
+        RoutineSharedStorage.save(routines, reloadWidgets: false)
     }
 
-    private func refreshNotifications() {
+    private func scheduleExternalRefresh(previousRoutines: [Routine]) {
+        externalRefreshTask?.cancel()
         let routines = routines
-        Task {
+        let shouldRefreshNotifications = Self.notificationSignature(for: previousRoutines) != Self.notificationSignature(for: routines)
+
+        externalRefreshTask = Task {
+            try? await Task.sleep(nanoseconds: 800_000_000)
+            guard !Task.isCancelled else { return }
+
+            RoutineSharedStorage.reloadWidgets()
+            guard shouldRefreshNotifications else { return }
             await RoutineNotificationScheduler.refresh(for: routines)
         }
     }
 
-    private static let defaultsKey = "RoutineApp.routines.v1"
+    private func scheduleNotificationRefresh(for routines: [Routine], after delay: UInt64) {
+        Task {
+            if delay > 0 {
+                try? await Task.sleep(nanoseconds: delay)
+                guard !Task.isCancelled else { return }
+            }
+
+            await RoutineNotificationScheduler.refresh(for: routines)
+        }
+    }
+
+    private static func notificationSignature(for routines: [Routine]) -> Set<RoutineNotificationInfo> {
+        Set(
+            routines.filter(\.notifies).map {
+                RoutineNotificationInfo(
+                    id: $0.id,
+                    startMinutes: $0.startMinutes,
+                    name: routineDisplayName(for: $0),
+                    notifies: $0.notifies
+                )
+            }
+        )
+    }
 
     private static func routines(from text: String) throws -> [Routine] {
         var imported: [Routine] = []
@@ -392,20 +712,13 @@ final class RoutineStore {
         return result
     }
 
-    private static let sampleRoutines: [Routine] = [
-        Routine(name: "睡觉", startMinutes: 22 * 60, endMinutes: 6 * 60, color: RoutineColor.defaultColor(at: 0)),
-        Routine(name: "跑步", startMinutes: 6 * 60, endMinutes: 8 * 60, color: RoutineColor.defaultColor(at: 1)),
-        Routine(name: "吃饭", startMinutes: 8 * 60, endMinutes: 9 * 60, color: RoutineColor.defaultColor(at: 2)),
-        Routine(name: "工作", startMinutes: 9 * 60, endMinutes: 14 * 60, color: RoutineColor.defaultColor(at: 4)),
-        Routine(name: "休息", startMinutes: 14 * 60, endMinutes: 16 * 60, color: RoutineColor.defaultColor(at: 9)),
-        Routine(name: "晚餐", startMinutes: 18 * 60, endMinutes: 19 * 60, color: RoutineColor.defaultColor(at: 11))
-    ]
 }
 
 enum RoutineNotificationScheduler {
     private static let identifierPrefix = "RoutineApp.routine."
 
     static func refresh(for routines: [Routine]) async {
+        let notificationRoutines = routines.filter(\.notifies)
         let center = UNUserNotificationCenter.current()
         let pending = await center.pendingNotificationRequests()
         let ownedIdentifiers = pending
@@ -413,7 +726,6 @@ enum RoutineNotificationScheduler {
             .filter { $0.hasPrefix(identifierPrefix) }
         center.removePendingNotificationRequests(withIdentifiers: ownedIdentifiers)
 
-        let notificationRoutines = routines.filter(\.notifies)
         guard !notificationRoutines.isEmpty else { return }
 
         guard await ensureNotificationAuthorization(center: center) else {
@@ -461,6 +773,13 @@ enum RoutineNotificationScheduler {
     }
 }
 
+private struct RoutineNotificationInfo: Hashable {
+    var id: Routine.ID
+    var startMinutes: Int
+    var name: String
+    var notifies: Bool
+}
+
 enum RoutineImportError: LocalizedError {
     case noValidRoutines
 
@@ -471,6 +790,7 @@ enum RoutineImportError: LocalizedError {
         }
     }
 }
+#endif
 
 let minutesPerDay = 24 * 60
 

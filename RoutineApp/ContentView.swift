@@ -1,8 +1,12 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var store = RoutineStore()
     @AppStorage("RoutineApp.themeMode") private var themeMode = AppThemeMode.system
+    @State private var liveActivityEnabled = RoutineSharedStorage.loadLiveActivityEnabled()
+    @State private var liveActivitySyncTask: Task<Void, Never>?
+    @State private var lastImmediateLiveActivitySyncDate: Date?
 
     var body: some View {
         TabView {
@@ -11,13 +15,61 @@ struct ContentView: View {
                     Label("日程", systemImage: "clock")
                 }
 
-            SettingsView(store: store, themeMode: $themeMode)
+            SettingsView(store: store, themeMode: $themeMode, liveActivityEnabled: $liveActivityEnabled)
                 .tabItem {
                     Label("配置", systemImage: "slider.horizontal.3")
                 }
         }
         .tint(.primary)
         .preferredColorScheme(themeMode.colorScheme)
+        .task {
+            guard liveActivityEnabled else { return }
+            syncLiveActivity(immediately: true)
+        }
+        .onChange(of: store.routines) { _, _ in
+            guard liveActivityEnabled else { return }
+            syncLiveActivity()
+        }
+        .onChange(of: liveActivityEnabled) { _, _ in
+            RoutineSharedStorage.saveLiveActivityEnabled(liveActivityEnabled)
+            syncLiveActivity(immediately: true)
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            syncLiveActivityAfterSceneActivation()
+        }
+    }
+
+    private func syncLiveActivityAfterSceneActivation() {
+        guard liveActivityEnabled else { return }
+
+        let now = Date()
+        if let lastImmediateLiveActivitySyncDate,
+           now.timeIntervalSince(lastImmediateLiveActivitySyncDate) < 1.5 {
+            return
+        }
+
+        syncLiveActivity(immediately: true)
+    }
+
+    private func syncLiveActivity(immediately: Bool = false) {
+        liveActivitySyncTask?.cancel()
+
+        let routines = store.routines
+        let enabled = liveActivityEnabled
+
+        if immediately {
+            lastImmediateLiveActivitySyncDate = Date()
+        }
+
+        liveActivitySyncTask = Task {
+            if !immediately {
+                try? await Task.sleep(nanoseconds: 600_000_000)
+                guard !Task.isCancelled else { return }
+            }
+
+            await RoutineLiveActivityController.sync(routines: routines, enabled: enabled)
+        }
     }
 }
 
@@ -33,8 +85,8 @@ struct ScheduleView: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    TimelineView(.periodic(from: .now, by: 1)) { timeline in
-                        CurrentRoutineStatusView(snapshot: routineSnapshot(at: timeline.date, routines: routines))
+                    TimelineView(.periodic(from: .now, by: 60)) { timeline in
+                        CurrentRoutineStatusView(snapshot: routineStatusSnapshot(at: timeline.date, routines: routines))
                     }
                     .padding(.horizontal, 28)
                     .padding(.top, 14)
@@ -51,7 +103,7 @@ struct ScheduleView: View {
 }
 
 private struct CurrentRoutineStatusView: View {
-    let snapshot: RoutineSnapshot
+    let snapshot: RoutineStatusSnapshot
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -70,10 +122,12 @@ private struct CurrentRoutineStatusView: View {
                 Spacer(minLength: 12)
 
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text(snapshot.remainingText)
+                    CurrentRoutineCountdownText(snapshot: snapshot)
                         .font(.system(size: 22, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
 
                     VStack(alignment: .trailing, spacing: 1) {
                         Text("下一日程")
@@ -88,8 +142,8 @@ private struct CurrentRoutineStatusView: View {
                 }
             }
 
-            ProgressView(value: snapshot.progress)
-                .tint(snapshot.tint)
+            CurrentRoutineProgressView(snapshot: snapshot)
+                .tint(snapshot.tintColor)
                 .scaleEffect(x: 1, y: 1.3, anchor: .center)
 
             HStack {
@@ -111,144 +165,34 @@ private struct CurrentRoutineStatusView: View {
     }
 }
 
-private struct RoutineSnapshot {
-    let title: String
-    let caption: String
-    let progress: Double
-    let remainingText: String
-    let startTimeText: String
-    let endTimeText: String
-    let nextTitle: String
-    let tint: Color
-}
+private struct CurrentRoutineCountdownText: View {
+    let snapshot: RoutineStatusSnapshot
 
-private func routineSnapshot(at date: Date, routines: [Routine]) -> RoutineSnapshot {
-    guard !routines.isEmpty else {
-        return RoutineSnapshot(
-            title: "暂无日程",
-            caption: "当前",
-            progress: 0,
-            remainingText: "--:--:--",
-            startTimeText: "--:--",
-            endTimeText: "--:--",
-            nextTitle: "无",
-            tint: .secondary
-        )
-    }
-
-    let seconds = secondsSinceStartOfDay(for: date)
-
-    if let current = routines.first(where: { $0.contains(daySecond: seconds) }) {
-        let elapsed = current.elapsedSeconds(at: seconds)
-        let duration = max(current.durationMinutes * 60, 1)
-        let remaining = max(duration - elapsed, 0)
-        let next = nextRoutine(after: seconds, routines: routines, excluding: current.id)
-
-        return RoutineSnapshot(
-            title: current.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "新日程" : current.name,
-            caption: "当前日程",
-            progress: min(max(Double(elapsed) / Double(duration), 0), 1),
-            remainingText: countdownString(seconds: remaining),
-            startTimeText: timeString(minutes: current.startMinutes),
-            endTimeText: timeString(minutes: current.endMinutes),
-            nextTitle: next.map { displayNameWithDuration(for: $0.routine) } ?? "无",
-            tint: current.color.swiftUIColor
-        )
-    }
-
-    let next = nextRoutine(after: seconds, routines: routines)
-
-    return RoutineSnapshot(
-        title: "空闲",
-        caption: next.map { "距离 \($0.routine.name) 开始" } ?? "当前",
-        progress: 0,
-        remainingText: countdownString(seconds: next?.remaining ?? 0),
-        startTimeText: "--:--",
-        endTimeText: "--:--",
-        nextTitle: next.map { displayNameWithDuration(for: $0.routine) } ?? "无",
-        tint: .secondary
-    )
-}
-
-private func nextRoutine(
-    after seconds: Int,
-    routines: [Routine],
-    excluding excludedID: Routine.ID? = nil
-) -> (routine: Routine, remaining: Int)? {
-    routines
-        .filter { $0.id != excludedID }
-        .map { routine in (routine: routine, remaining: secondsUntilStart(of: routine, from: seconds)) }
-        .min { $0.remaining < $1.remaining }
-}
-
-private func secondsSinceStartOfDay(for date: Date) -> Int {
-    let components = Calendar.current.dateComponents([.hour, .minute, .second], from: date)
-    return ((components.hour ?? 0) * 3600 + (components.minute ?? 0) * 60 + (components.second ?? 0)) % (minutesPerDay * 60)
-}
-
-private func secondsUntilStart(of routine: Routine, from seconds: Int) -> Int {
-    let startSeconds = routine.startMinutes.normalizedDayMinute * 60
-    let raw = startSeconds - seconds
-    return raw >= 0 ? raw : raw + minutesPerDay * 60
-}
-
-private func countdownString(seconds: Int) -> String {
-    let hours = seconds / 3600
-    let minutes = (seconds % 3600) / 60
-    let seconds = seconds % 60
-    return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
-}
-
-private func timeString(minutes: Int) -> String {
-    let normalized = minutes.normalizedDayMinute
-    return String(format: "%02d:%02d", normalized / 60, normalized % 60)
-}
-
-private func displayName(for routine: Routine) -> String {
-    let trimmed = routine.name.trimmingCharacters(in: .whitespacesAndNewlines)
-    return trimmed.isEmpty ? "新日程" : trimmed
-}
-
-private func displayNameWithDuration(for routine: Routine) -> String {
-    "\(displayName(for: routine)) \(durationText(minutes: routine.durationMinutes))"
-}
-
-private func durationText(minutes: Int) -> String {
-    if minutes < 60 {
-        return "\(minutes)min"
-    }
-
-    if minutes.isMultiple(of: 60) {
-        return "\(minutes / 60)h"
-    }
-
-    if minutes.isMultiple(of: 30) {
-        return String(format: "%.1fh", Double(minutes) / 60)
-    }
-
-    return "\(minutes / 60)h\(minutes % 60)min"
-}
-
-private extension Routine {
-    func contains(daySecond: Int) -> Bool {
-        let start = startMinutes.normalizedDayMinute * 60
-        let end = endMinutes.normalizedDayMinute * 60
-
-        if start == end {
-            return true
+    var body: some View {
+        if let endDate = snapshot.endDate,
+           let interval = routineCountdownInterval(startDate: snapshot.startDate, endDate: endDate) {
+            Text(timerInterval: interval, countsDown: true, showsHours: true)
+        } else {
+            Text(snapshot.remainingText)
         }
-
-        if start < end {
-            return daySecond >= start && daySecond < end
-        }
-
-        return daySecond >= start || daySecond < end
     }
+}
 
-    func elapsedSeconds(at daySecond: Int) -> Int {
-        let start = startMinutes.normalizedDayMinute * 60
-        let raw = daySecond - start
-        return raw >= 0 ? raw : raw + minutesPerDay * 60
+private struct CurrentRoutineProgressView: View {
+    let snapshot: RoutineStatusSnapshot
+
+    var body: some View {
+        if let startDate = snapshot.startDate,
+           let endDate = snapshot.endDate,
+           startDate < endDate {
+            ProgressView(timerInterval: startDate...endDate, countsDown: false) {
+                EmptyView()
+            } currentValueLabel: {
+                EmptyView()
+            }
+        } else {
+            ProgressView(value: snapshot.progress)
+        }
     }
 }
 

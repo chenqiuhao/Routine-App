@@ -13,7 +13,39 @@
 		7A6A8D6E2E04A00100A1B001 /* RoutineRingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A6A8D692E04A00100A1B001 /* RoutineRingView.swift */; };
 		7A6A8D6F2E04A00100A1B001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A6A8D6A2E04A00100A1B001 /* SettingsView.swift */; };
 		7A6A8D722E04A00100A1B001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7A6A8D712E04A00100A1B001 /* Assets.xcassets */; };
+		7B10000A2E05000100B1B001 /* RoutineWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B1000022E05000100B1B001 /* RoutineWidgetsBundle.swift */; };
+		7B10000B2E05000100B1B001 /* RoutineStatusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B1000032E05000100B1B001 /* RoutineStatusWidget.swift */; };
+		7B10000C2E05000100B1B001 /* RoutineLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B1000042E05000100B1B001 /* RoutineLiveActivityWidget.swift */; };
+		7B10000D2E05000100B1B001 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A6A8D672E04A00100A1B001 /* AppModel.swift */; };
+		7B10000E2E05000100B1B001 /* RoutineActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B1000072E05000100B1B001 /* RoutineActivityAttributes.swift */; };
+		7B10000F2E05000100B1B001 /* RoutineActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B1000072E05000100B1B001 /* RoutineActivityAttributes.swift */; };
+		7B1000102E05000100B1B001 /* RoutineLiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B1000112E05000100B1B001 /* RoutineLiveActivityController.swift */; };
+		7B1000122E05000100B1B001 /* RoutineWidgets.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 7B1000012E05000100B1B001 /* RoutineWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		7B1000192E05000100B1B001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7A6A8D572E04A00100A1B001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7B1000172E05000100B1B001;
+			remoteInfo = RoutineWidgets;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		7B1000132E05000100B1B001 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				7B1000122E05000100B1B001 /* RoutineWidgets.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		7A6A8D5F2E04A00100A1B001 /* RoutineApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoutineApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -23,10 +55,26 @@
 		7A6A8D692E04A00100A1B001 /* RoutineRingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineRingView.swift; sourceTree = "<group>"; };
 		7A6A8D6A2E04A00100A1B001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		7A6A8D712E04A00100A1B001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		7B1000012E05000100B1B001 /* RoutineWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RoutineWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7B1000022E05000100B1B001 /* RoutineWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineWidgetsBundle.swift; sourceTree = "<group>"; };
+		7B1000032E05000100B1B001 /* RoutineStatusWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineStatusWidget.swift; sourceTree = "<group>"; };
+		7B1000042E05000100B1B001 /* RoutineLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineLiveActivityWidget.swift; sourceTree = "<group>"; };
+		7B1000052E05000100B1B001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		7B1000062E05000100B1B001 /* RoutineWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoutineWidgets.entitlements; sourceTree = "<group>"; };
+		7B1000072E05000100B1B001 /* RoutineActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineActivityAttributes.swift; sourceTree = "<group>"; };
+		7B1000082E05000100B1B001 /* RoutineApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoutineApp.entitlements; sourceTree = "<group>"; };
+		7B1000112E05000100B1B001 /* RoutineLiveActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutineLiveActivityController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		7A6A8D5C2E04A00100A1B001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7B1000152E05000100B1B001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -40,6 +88,7 @@
 			isa = PBXGroup;
 			children = (
 				7A6A8D652E04A00100A1B001 /* RoutineApp */,
+				7B1000092E05000100B1B001 /* RoutineWidgets */,
 				7A6A8D602E04A00100A1B001 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -48,6 +97,7 @@
 			isa = PBXGroup;
 			children = (
 				7A6A8D5F2E04A00100A1B001 /* RoutineApp.app */,
+				7B1000012E05000100B1B001 /* RoutineWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -60,9 +110,24 @@
 				7A6A8D682E04A00100A1B001 /* ContentView.swift */,
 				7A6A8D692E04A00100A1B001 /* RoutineRingView.swift */,
 				7A6A8D6A2E04A00100A1B001 /* SettingsView.swift */,
+				7B1000072E05000100B1B001 /* RoutineActivityAttributes.swift */,
+				7B1000112E05000100B1B001 /* RoutineLiveActivityController.swift */,
+				7B1000082E05000100B1B001 /* RoutineApp.entitlements */,
 				7A6A8D712E04A00100A1B001 /* Assets.xcassets */,
 			);
 			path = RoutineApp;
+			sourceTree = "<group>";
+		};
+		7B1000092E05000100B1B001 /* RoutineWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				7B1000022E05000100B1B001 /* RoutineWidgetsBundle.swift */,
+				7B1000032E05000100B1B001 /* RoutineStatusWidget.swift */,
+				7B1000042E05000100B1B001 /* RoutineLiveActivityWidget.swift */,
+				7B1000052E05000100B1B001 /* Info.plist */,
+				7B1000062E05000100B1B001 /* RoutineWidgets.entitlements */,
+			);
+			path = RoutineWidgets;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -75,15 +140,34 @@
 				7A6A8D5B2E04A00100A1B001 /* Sources */,
 				7A6A8D5C2E04A00100A1B001 /* Frameworks */,
 				7A6A8D5D2E04A00100A1B001 /* Resources */,
+				7B1000132E05000100B1B001 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				7B1000182E05000100B1B001 /* PBXTargetDependency */,
 			);
 			name = RoutineApp;
 			productName = RoutineApp;
 			productReference = 7A6A8D5F2E04A00100A1B001 /* RoutineApp.app */;
 			productType = "com.apple.product-type.application";
+		};
+		7B1000172E05000100B1B001 /* RoutineWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7B10001C2E05000100B1B001 /* Build configuration list for PBXNativeTarget "RoutineWidgets" */;
+			buildPhases = (
+				7B1000142E05000100B1B001 /* Sources */,
+				7B1000152E05000100B1B001 /* Frameworks */,
+				7B1000162E05000100B1B001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RoutineWidgets;
+			productName = RoutineWidgets;
+			productReference = 7B1000012E05000100B1B001 /* RoutineWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -96,6 +180,9 @@
 				LastUpgradeCheck = 2650;
 				TargetAttributes = {
 					7A6A8D5E2E04A00100A1B001 = {
+						CreatedOnToolsVersion = 26.5;
+					};
+					7B1000172E05000100B1B001 = {
 						CreatedOnToolsVersion = 26.5;
 					};
 				};
@@ -114,6 +201,7 @@
 			projectRoot = "";
 			targets = (
 				7A6A8D5E2E04A00100A1B001 /* RoutineApp */,
+				7B1000172E05000100B1B001 /* RoutineWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -124,6 +212,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				7A6A8D722E04A00100A1B001 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7B1000162E05000100B1B001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -139,10 +234,32 @@
 				7A6A8D6D2E04A00100A1B001 /* ContentView.swift in Sources */,
 				7A6A8D6E2E04A00100A1B001 /* RoutineRingView.swift in Sources */,
 				7A6A8D6F2E04A00100A1B001 /* SettingsView.swift in Sources */,
+				7B10000E2E05000100B1B001 /* RoutineActivityAttributes.swift in Sources */,
+				7B1000102E05000100B1B001 /* RoutineLiveActivityController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7B1000142E05000100B1B001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7B10000A2E05000100B1B001 /* RoutineWidgetsBundle.swift in Sources */,
+				7B10000B2E05000100B1B001 /* RoutineStatusWidget.swift in Sources */,
+				7B10000C2E05000100B1B001 /* RoutineLiveActivityWidget.swift in Sources */,
+				7B10000D2E05000100B1B001 /* AppModel.swift in Sources */,
+				7B10000F2E05000100B1B001 /* RoutineActivityAttributes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		7B1000182E05000100B1B001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7B1000172E05000100B1B001 /* RoutineWidgets */;
+			targetProxy = 7B1000192E05000100B1B001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		7A6A8D732E04A00100A1B001 /* Debug */ = {
@@ -269,7 +386,9 @@
 		7A6A8D772E04A00100A1B001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = RoutineApp/RoutineApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
@@ -278,6 +397,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Routine;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -300,7 +420,9 @@
 		7A6A8D782E04A00100A1B001 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = RoutineApp/RoutineApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
@@ -309,6 +431,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Routine;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -322,6 +445,66 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.codex.routineapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		7B10001A2E05000100B1B001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = RoutineWidgets/RoutineWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7T7343LR3C;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RoutineWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codex.routineapp.RoutineWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG WIDGET_EXTENSION $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		7B10001B2E05000100B1B001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = RoutineWidgets/RoutineWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7T7343LR3C;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RoutineWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codex.routineapp.RoutineWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "WIDGET_EXTENSION $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -345,6 +528,15 @@
 			buildConfigurations = (
 				7A6A8D772E04A00100A1B001 /* Debug */,
 				7A6A8D782E04A00100A1B001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7B10001C2E05000100B1B001 /* Build configuration list for PBXNativeTarget "RoutineWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7B10001A2E05000100B1B001 /* Debug */,
+				7B10001B2E05000100B1B001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
