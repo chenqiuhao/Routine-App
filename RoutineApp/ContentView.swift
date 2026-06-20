@@ -6,6 +6,7 @@ struct ContentView: View {
     @AppStorage("RoutineApp.themeMode") private var themeMode = AppThemeMode.system
     @State private var liveActivityEnabled = RoutineSharedStorage.loadLiveActivityEnabled()
     @State private var liveActivitySyncTask: Task<Void, Never>?
+    @State private var liveActivityBoundarySyncTask: Task<Void, Never>?
     @State private var lastImmediateLiveActivitySyncDate: Date?
 
     var body: some View {
@@ -69,6 +70,28 @@ struct ContentView: View {
             }
 
             await RoutineLiveActivityController.sync(routines: routines, enabled: enabled)
+            await MainActor.run {
+                scheduleNextLiveActivityBoundarySync(routines: routines, enabled: enabled)
+            }
+        }
+    }
+
+    private func scheduleNextLiveActivityBoundarySync(routines: [Routine], enabled: Bool) {
+        liveActivityBoundarySyncTask?.cancel()
+
+        guard enabled,
+              let nextChangeDate = nextRoutineStatusChangeDate(after: Date(), routines: routines) else {
+            return
+        }
+
+        liveActivityBoundarySyncTask = Task {
+            let delay = max(nextChangeDate.timeIntervalSinceNow + 0.2, 0)
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run {
+                syncLiveActivity(immediately: true)
+            }
         }
     }
 }
@@ -85,7 +108,7 @@ struct ScheduleView: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    TimelineView(.periodic(from: .now, by: 60)) { timeline in
+                    TimelineView(.periodic(from: .now, by: 1)) { timeline in
                         CurrentRoutineStatusView(snapshot: routineStatusSnapshot(at: timeline.date, routines: routines))
                     }
                     .padding(.horizontal, 28)

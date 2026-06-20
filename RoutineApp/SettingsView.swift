@@ -31,6 +31,16 @@ struct SettingsView: View {
                         Label("按顺序重设颜色", systemImage: "paintpalette")
                     }
                     .disabled(store.routines.isEmpty)
+
+                    Button {
+                        store.toggleAllNotifications()
+                    } label: {
+                        Label(
+                            store.allRoutinesNotify ? "关闭所有日程提醒" : "打开所有日程提醒",
+                            systemImage: store.allRoutinesNotify ? "bell.slash" : "bell"
+                        )
+                    }
+                    .disabled(store.routines.isEmpty)
                 }
 
                 Section("外观") {

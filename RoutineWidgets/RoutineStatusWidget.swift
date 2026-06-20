@@ -21,24 +21,27 @@ struct RoutineStatusProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<RoutineStatusEntry>) -> Void) {
         let now = Date()
-        let entry = entry(at: now)
-        let refreshDate = nextTimelineRefreshDate(after: now, snapshot: entry.snapshot)
-        completion(Timeline(entries: [entry], policy: .after(refreshDate)))
+        let routines = RoutineSharedStorage.loadRoutines()
+        let entries = routineStatusTimelineDates(from: now, routines: routines)
+            .map { entry(at: $0, routines: routines) }
+        let refreshDate = nextTimelineRefreshDate(after: entries.last?.date ?? now, routines: routines)
+        completion(Timeline(entries: entries, policy: .after(refreshDate)))
     }
 
     private func entry(at date: Date) -> RoutineStatusEntry {
+        entry(at: date, routines: RoutineSharedStorage.loadRoutines())
+    }
+
+    private func entry(at date: Date, routines: [Routine]) -> RoutineStatusEntry {
         RoutineStatusEntry(
             date: date,
-            snapshot: routineStatusSnapshot(at: date, routines: RoutineSharedStorage.loadRoutines())
+            snapshot: routineStatusSnapshot(at: date, routines: routines)
         )
     }
 
-    private func nextTimelineRefreshDate(after date: Date, snapshot: RoutineStatusSnapshot) -> Date {
-        guard let endDate = snapshot.endDate else {
-            return date.addingTimeInterval(60 * 60)
-        }
-
-        return max(endDate.addingTimeInterval(1), date.addingTimeInterval(60))
+    private func nextTimelineRefreshDate(after date: Date, routines: [Routine]) -> Date {
+        nextRoutineStatusChangeDate(after: date, routines: routines)?.addingTimeInterval(1)
+            ?? date.addingTimeInterval(60 * 60)
     }
 }
 
@@ -202,4 +205,3 @@ private struct WidgetProgressView: View {
         }
     }
 }
-

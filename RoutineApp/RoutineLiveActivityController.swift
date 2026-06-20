@@ -17,17 +17,20 @@ enum RoutineLiveActivityController {
         }
 
         let snapshot = routineStatusSnapshot(at: Date(), routines: routines)
-        guard let endDate = snapshot.endDate else {
+        guard snapshot.endDate != nil else {
             await endAll()
             return
         }
 
-        let state = RoutineActivityAttributes.ContentState(snapshot: snapshot)
-        let content = ActivityContent(state: state, staleDate: endDate)
-        let key = ActivitySnapshotKey(snapshot: snapshot)
+        let state = RoutineActivityAttributes.ContentState(snapshot: snapshot, routines: routines)
+        let content = ActivityContent(
+            state: state,
+            staleDate: nextRoutineStatusChangeDate(after: Date(), routines: routines)
+        )
+        let key = ActivitySnapshotKey(snapshot: snapshot, routines: routines)
 
         if let activity = Activity<RoutineActivityAttributes>.activities.first {
-            if ActivitySnapshotKey(snapshot: activity.content.state.snapshot) == key || lastSubmittedKey == key {
+            if ActivitySnapshotKey(snapshot: activity.content.state.snapshot, routines: activity.content.state.routines) == key || lastSubmittedKey == key {
                 lastSubmittedKey = key
                 return
             }
@@ -71,8 +74,9 @@ private struct ActivitySnapshotKey: Equatable {
     let tint: RoutineColor?
     let startDate: Date?
     let endDate: Date?
+    let routines: [Routine]
 
-    init(snapshot: RoutineStatusSnapshot) {
+    init(snapshot: RoutineStatusSnapshot, routines: [Routine]) {
         title = snapshot.title
         caption = snapshot.caption
         startTimeText = snapshot.startTimeText
@@ -81,5 +85,6 @@ private struct ActivitySnapshotKey: Equatable {
         tint = snapshot.tint
         startDate = snapshot.startDate
         endDate = snapshot.endDate
+        self.routines = routines
     }
 }

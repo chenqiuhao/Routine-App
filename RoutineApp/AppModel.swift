@@ -6,7 +6,7 @@ import UserNotifications
 import SwiftUI
 import WidgetKit
 
-struct Routine: Identifiable, Codable, Equatable {
+struct Routine: Identifiable, Codable, Equatable, Hashable {
     var id: UUID
     var name: String
     var startMinutes: Int
@@ -324,6 +324,42 @@ func routineStatusSnapshot(at date: Date, routines: [Routine]) -> RoutineStatusS
     )
 }
 
+func routineStatusTimelineDates(
+    from date: Date,
+    routines: [Routine],
+    horizon: TimeInterval = 26 * 60 * 60,
+    limit: Int = 64
+) -> [Date] {
+    guard limit > 0 else { return [] }
+
+    var dates = [date]
+    var cursor = date
+    let endDate = date.addingTimeInterval(horizon)
+
+    while dates.count < limit,
+          let nextChangeDate = nextRoutineStatusChangeDate(after: cursor, routines: routines) {
+        let entryDate = nextChangeDate.addingTimeInterval(1)
+        guard entryDate <= endDate else { break }
+
+        if let lastDate = dates.last,
+           entryDate.timeIntervalSince(lastDate) > 0.5 {
+            dates.append(entryDate)
+        }
+
+        cursor = entryDate
+    }
+
+    return dates
+}
+
+func nextRoutineStatusChangeDate(after date: Date, routines: [Routine]) -> Date? {
+    let boundaryDates = routineBoundaryDates(around: date, routines: routines)
+    let threshold = date.addingTimeInterval(0.5)
+    return boundaryDates
+        .filter { $0 > threshold }
+        .min()
+}
+
 func routineDisplayName(for routine: Routine) -> String {
     let trimmed = routine.name.trimmingCharacters(in: .whitespacesAndNewlines)
     return trimmed.isEmpty ? "新日程" : trimmed
@@ -369,6 +405,27 @@ private func nextRoutine(
         .filter { $0.id != excludedID }
         .map { routine in (routine: routine, remaining: secondsUntilStart(of: routine, from: seconds)) }
         .min { $0.remaining < $1.remaining }
+}
+
+private func routineBoundaryDates(around date: Date, routines: [Routine]) -> [Date] {
+    let calendar = Calendar.current
+    let dayStart = calendar.startOfDay(for: date)
+
+    return routines.flatMap { routine -> [Date] in
+        guard routine.startMinutes.normalizedDayMinute != routine.endMinutes.normalizedDayMinute else {
+            return []
+        }
+
+        return (-1...2).flatMap { dayOffset -> [Date] in
+            guard let boundaryDay = calendar.date(byAdding: .day, value: dayOffset, to: dayStart) else {
+                return []
+            }
+
+            return [routine.startMinutes, routine.endMinutes].compactMap { minutes in
+                calendar.date(byAdding: .minute, value: minutes.normalizedDayMinute, to: boundaryDay)
+            }
+        }
+    }
 }
 
 private func secondsSinceStartOfDay(for date: Date) -> Int {
@@ -504,6 +561,25 @@ final class RoutineStore {
 
         guard recoloredRoutines != routines else { return }
         routines = recoloredRoutines
+    }
+
+    var allRoutinesNotify: Bool {
+        !routines.isEmpty && routines.allSatisfy(\.notifies)
+    }
+
+    func toggleAllNotifications() {
+        setAllNotifications(!allRoutinesNotify)
+    }
+
+    private func setAllNotifications(_ enabled: Bool) {
+        let updatedRoutines = routines.map { routine in
+            var updatedRoutine = routine
+            updatedRoutine.notifies = enabled
+            return updatedRoutine
+        }
+
+        guard updatedRoutines != routines else { return }
+        routines = updatedRoutines
     }
 
     func remove(atOffsets offsets: IndexSet) {

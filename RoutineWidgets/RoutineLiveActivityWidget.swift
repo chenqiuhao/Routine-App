@@ -64,7 +64,7 @@ struct RoutineLiveActivityWidget: Widget {
                     .lineLimit(1)
                     .minimumScaleFactor(1)
                     .frame(width: 50, alignment: .trailing)
-                } minimal: {
+            } minimal: {
                 Circle()
                     .fill(context.state.snapshot.tintColor)
             }
@@ -164,36 +164,12 @@ private struct LiveCountdownTimerText: View {
     let presentation: LiveCountdownPresentation
 
     var body: some View {
-        let targetDate = max(endDate, Date.now.addingTimeInterval(1))
-
-        switch presentation {
-        case .lockScreen:
-            LockScreenCountdownText(endDate: targetDate)
-        case .expandedIsland, .compactIsland:
-            IslandCountdownText(startDate: startDate, endDate: targetDate, presentation: presentation)
-        }
-    }
-}
-
-private struct LockScreenCountdownText: View {
-    let endDate: Date
-
-    var body: some View {
-        Text(endDate, style: .relative)
-            .environment(\.locale, Locale(identifier: "en_US_POSIX"))
-            .lineLimit(1)
-            .minimumScaleFactor(LiveCountdownPresentation.lockScreen.minimumScaleFactor)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-    }
-}
-
-private struct IslandCountdownText: View {
-    let startDate: Date?
-    let endDate: Date
-    let presentation: LiveCountdownPresentation
-
-    var body: some View {
-        if let interval = routineCountdownInterval(startDate: startDate, endDate: endDate) {
+        if endDate <= Date.now {
+            Text("0:00")
+                .lineLimit(1)
+                .minimumScaleFactor(presentation.minimumScaleFactor)
+                .monospacedDigit()
+        } else if let interval = routineCountdownInterval(startDate: startDate, endDate: endDate) {
             Text(timerInterval: interval, countsDown: true, showsHours: true)
                 .environment(\.locale, Locale(identifier: "en_US_POSIX"))
                 .lineLimit(1)
