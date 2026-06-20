@@ -164,6 +164,34 @@ private struct LiveCountdownTimerText: View {
     let presentation: LiveCountdownPresentation
 
     var body: some View {
+        switch presentation {
+        case .lockScreen:
+            LockScreenRelativeCountdownText(endDate: endDate)
+        case .expandedIsland, .compactIsland:
+            IslandCountdownText(startDate: startDate, endDate: endDate, presentation: presentation)
+        }
+    }
+}
+
+private struct LockScreenRelativeCountdownText: View {
+    let endDate: Date
+
+    var body: some View {
+        if endDate <= Date.now {
+            Text("0 min")
+        } else {
+            Text(endDate, style: .relative)
+                .environment(\.locale, Locale(identifier: "en_US_POSIX"))
+        }
+    }
+}
+
+private struct IslandCountdownText: View {
+    let startDate: Date?
+    let endDate: Date
+    let presentation: LiveCountdownPresentation
+
+    var body: some View {
         if endDate <= Date.now {
             Text("0:00")
                 .lineLimit(1)
