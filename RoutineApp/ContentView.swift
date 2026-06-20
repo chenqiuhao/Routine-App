@@ -3,29 +3,35 @@ import SwiftUI
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var store = RoutineStore()
-    @AppStorage("RoutineApp.themeMode") private var themeMode = AppThemeMode.system
+    @State private var selectedTab = AppTab.schedule
+    @State private var themeMode = AppThemeMode.loadSaved()
     @State private var liveActivityEnabled = RoutineSharedStorage.loadLiveActivityEnabled()
     @State private var liveActivitySyncTask: Task<Void, Never>?
     @State private var liveActivityBoundarySyncTask: Task<Void, Never>?
     @State private var lastImmediateLiveActivitySyncDate: Date?
 
     var body: some View {
-        TabView {
-            ScheduleView(routines: store.routines)
+        TabView(selection: $selectedTab) {
+            ScheduleTabView(routines: store.routines, isActive: selectedTab == .schedule)
                 .tabItem {
                     Label("日程", systemImage: "clock")
                 }
+                .tag(AppTab.schedule)
 
             SettingsView(store: store, themeMode: $themeMode, liveActivityEnabled: $liveActivityEnabled)
                 .tabItem {
                     Label("配置", systemImage: "slider.horizontal.3")
                 }
+                .tag(AppTab.settings)
         }
         .tint(.primary)
         .preferredColorScheme(themeMode.colorScheme)
         .task {
             guard liveActivityEnabled else { return }
             syncLiveActivity(immediately: true)
+        }
+        .onChange(of: themeMode) { _, newMode in
+            AppThemeMode.saveAsync(newMode)
         }
         .onChange(of: store.routines) { _, _ in
             guard liveActivityEnabled else { return }
@@ -92,6 +98,25 @@ struct ContentView: View {
             await MainActor.run {
                 syncLiveActivity(immediately: true)
             }
+        }
+    }
+}
+
+private enum AppTab: Hashable {
+    case schedule
+    case settings
+}
+
+private struct ScheduleTabView: View {
+    let routines: [Routine]
+    let isActive: Bool
+
+    var body: some View {
+        if isActive {
+            ScheduleView(routines: routines)
+        } else {
+            Color(.systemBackground)
+                .ignoresSafeArea()
         }
     }
 }

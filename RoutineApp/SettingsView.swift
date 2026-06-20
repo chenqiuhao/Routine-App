@@ -44,7 +44,7 @@ struct SettingsView: View {
                 }
 
                 Section("外观") {
-                    ThemeModeMenu(selection: $themeMode)
+                    ThemeModePicker(selection: $themeMode)
                 }
 
                 Section("锁屏") {
@@ -156,35 +156,20 @@ struct SettingsView: View {
     }
 }
 
-private struct ThemeModeMenu: View {
+private struct ThemeModePicker: View {
     @Binding var selection: AppThemeMode
 
     var body: some View {
-        Menu {
+        Picker(selection: $selection) {
             ForEach(AppThemeMode.allCases) { mode in
-                Button {
-                    selection = mode
-                } label: {
-                    if selection == mode {
-                        Label(mode.title, systemImage: "checkmark")
-                    } else {
-                        Text(mode.title)
-                    }
-                }
+                Text(mode.title)
+                    .tag(mode)
             }
         } label: {
-            HStack {
-                Text("夜间模式")
-                Spacer()
-                Text(selection.title)
-                    .foregroundStyle(.secondary)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .contentShape(Rectangle())
+            Text("夜间模式")
+                .foregroundStyle(.primary)
         }
-        .buttonStyle(.plain)
+        .pickerStyle(.menu)
     }
 }
 
@@ -300,9 +285,6 @@ private struct TimePillPicker: UIViewRepresentable {
 
     func updateUIView(_ picker: UIDatePicker, context: Context) {
         context.coordinator.parent = self
-        picker.minuteInterval = 5
-        picker.locale = Locale(identifier: "en_GB")
-        picker.backgroundColor = .clear
 
         let roundedMinutes = minutes.roundedToFiveMinutes
         if roundedMinutes != minutes {

@@ -6,7 +6,7 @@ import UserNotifications
 import SwiftUI
 import WidgetKit
 
-struct Routine: Identifiable, Codable, Equatable, Hashable {
+struct Routine: Identifiable, Codable, Equatable, Hashable, Sendable {
     var id: UUID
     var name: String
     var startMinutes: Int
@@ -40,7 +40,7 @@ struct Routine: Identifiable, Codable, Equatable, Hashable {
     }
 }
 
-struct RoutineColor: Identifiable, Codable, Equatable, Hashable {
+struct RoutineColor: Identifiable, Codable, Equatable, Hashable, Sendable {
     var id: String
     var name: String
     var hue: Double
@@ -149,10 +149,13 @@ struct RoutineColor: Identifiable, Codable, Equatable, Hashable {
     }
 }
 
-enum AppThemeMode: String, CaseIterable, Identifiable {
+enum AppThemeMode: String, CaseIterable, Identifiable, Sendable {
     case system
     case light
     case dark
+
+    private static let storageKey = "RoutineApp.themeMode"
+    private static let persistenceQueue = DispatchQueue(label: "RoutineApp.themeMode.persistence", qos: .utility)
 
     var id: String { rawValue }
 
@@ -177,12 +180,27 @@ enum AppThemeMode: String, CaseIterable, Identifiable {
             .dark
         }
     }
+
+    static func loadSaved() -> AppThemeMode {
+        guard let rawValue = UserDefaults.standard.string(forKey: storageKey) else {
+            return .system
+        }
+
+        return AppThemeMode(rawValue: rawValue) ?? .system
+    }
+
+    static func saveAsync(_ mode: AppThemeMode) {
+        persistenceQueue.async {
+            UserDefaults.standard.set(mode.rawValue, forKey: storageKey)
+        }
+    }
 }
 
 enum RoutineSharedStorage {
     static let appGroupIdentifier = "group.com.codex.routineapp"
     static let routinesKey = "RoutineApp.routines.v1"
     static let liveActivityEnabledKey = "RoutineApp.liveActivity.enabled"
+    private static let writeQueue = DispatchQueue(label: "RoutineApp.sharedStorage.write", qos: .utility)
 
     private static let appGroupDefaults = UserDefaults(suiteName: appGroupIdentifier)
     static let defaults: UserDefaults = appGroupDefaults ?? .standard
@@ -230,6 +248,12 @@ enum RoutineSharedStorage {
         Self.reloadWidgets()
     }
 
+    static func saveAsync(_ routines: [Routine], reloadWidgets: Bool) {
+        writeQueue.async {
+            save(routines, reloadWidgets: reloadWidgets)
+        }
+    }
+
     static func reloadWidgets() {
         WidgetCenter.shared.reloadAllTimelines()
     }
@@ -244,7 +268,7 @@ enum RoutineSharedStorage {
     ]
 }
 
-struct RoutineStatusSnapshot: Codable, Hashable {
+struct RoutineStatusSnapshot: Codable, Hashable, Sendable {
     var title: String
     var caption: String
     var progress: Double
@@ -618,7 +642,7 @@ final class RoutineStore {
     }
 
     private func save() {
-        RoutineSharedStorage.save(routines, reloadWidgets: false)
+        RoutineSharedStorage.saveAsync(routines, reloadWidgets: false)
     }
 
     private func scheduleExternalRefresh(previousRoutines: [Routine]) {
@@ -626,7 +650,7 @@ final class RoutineStore {
         let routines = routines
         let shouldRefreshNotifications = Self.notificationSignature(for: previousRoutines) != Self.notificationSignature(for: routines)
 
-        externalRefreshTask = Task {
+        externalRefreshTask = Task.detached(priority: .utility) {
             try? await Task.sleep(nanoseconds: 800_000_000)
             guard !Task.isCancelled else { return }
 
@@ -637,7 +661,7 @@ final class RoutineStore {
     }
 
     private func scheduleNotificationRefresh(for routines: [Routine], after delay: UInt64) {
-        Task {
+        Task.detached(priority: .utility) {
             if delay > 0 {
                 try? await Task.sleep(nanoseconds: delay)
                 guard !Task.isCancelled else { return }
@@ -849,7 +873,7 @@ enum RoutineNotificationScheduler {
     }
 }
 
-private struct RoutineNotificationInfo: Hashable {
+private struct RoutineNotificationInfo: Hashable, Sendable {
     var id: Routine.ID
     var startMinutes: Int
     var name: String

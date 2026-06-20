@@ -22,7 +22,7 @@ struct RoutineStatusProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<RoutineStatusEntry>) -> Void) {
         let now = Date()
         let routines = RoutineSharedStorage.loadRoutines()
-        let entries = routineStatusTimelineDates(from: now, routines: routines)
+        let entries = routineStatusWidgetTimelineDates(from: now, routines: routines)
             .map { entry(at: $0, routines: routines) }
         let refreshDate = nextTimelineRefreshDate(after: entries.last?.date ?? now, routines: routines)
         completion(Timeline(entries: entries, policy: .after(refreshDate)))
@@ -40,7 +40,7 @@ struct RoutineStatusProvider: TimelineProvider {
     }
 
     private func nextTimelineRefreshDate(after date: Date, routines: [Routine]) -> Date {
-        nextRoutineStatusChangeDate(after: date, routines: routines)?.addingTimeInterval(1)
+        nextRoutineStatusWidgetTimelineDate(after: date, routines: routines)
             ?? date.addingTimeInterval(60 * 60)
     }
 }
@@ -64,7 +64,7 @@ private struct RoutineStatusWidgetView: View {
     let entry: RoutineStatusEntry
 
     var body: some View {
-        RoutineStatusCard(snapshot: entry.snapshot, compact: family == .systemSmall)
+        RoutineStatusCard(date: entry.date, snapshot: entry.snapshot, compact: family == .systemSmall)
             .containerBackground(for: .widget) {
                 Color(.systemBackground)
             }
@@ -72,6 +72,7 @@ private struct RoutineStatusWidgetView: View {
 }
 
 struct RoutineStatusCard: View {
+    let date: Date
     let snapshot: RoutineStatusSnapshot
     let compact: Bool
 
@@ -92,12 +93,13 @@ struct RoutineStatusCard: View {
 
                 Spacer()
 
-                WidgetRemainingText(snapshot: snapshot)
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                WidgetRemainingText(date: date, snapshot: snapshot)
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
-                    .offset(x: -4)
+                    .frame(minWidth: 62, alignment: .trailing)
+                    .multilineTextAlignment(.trailing)
             }
 
             Text(snapshot.title)
@@ -142,7 +144,7 @@ struct RoutineStatusCard: View {
                 Spacer(minLength: 16)
 
                 VStack(alignment: .trailing, spacing: 4) {
-                    WidgetRemainingText(snapshot: snapshot)
+                    WidgetRemainingText(date: date, snapshot: snapshot)
                         .font(.system(size: 24, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .frame(maxWidth: 112, alignment: .trailing)
@@ -176,14 +178,16 @@ struct RoutineStatusCard: View {
 }
 
 private struct WidgetRemainingText: View {
+    let date: Date
     let snapshot: RoutineStatusSnapshot
 
     var body: some View {
-        if let endDate = snapshot.endDate {
+        if let endDate = snapshot.endDate,
+           endDate.timeIntervalSince(date) < 60 {
             Text(endDate, style: .relative)
                 .environment(\.locale, Locale(identifier: "en_US_POSIX"))
         } else {
-            Text(snapshot.remainingMinuteText)
+            Text(widgetRemainingCountdownText(date: date, snapshot: snapshot))
         }
     }
 }
@@ -204,4 +208,87 @@ private struct WidgetProgressView: View {
             ProgressView(value: snapshot.progress)
         }
     }
+}
+
+private func routineStatusWidgetTimelineDates(
+    from date: Date,
+    routines: [Routine],
+    horizon: TimeInterval = 4 * 60 * 60,
+    limit: Int = 120
+) -> [Date] {
+    guard limit > 0 else { return [] }
+
+    var dates = [date]
+    var cursor = date
+    let endDate = date.addingTimeInterval(horizon)
+
+    while dates.count < limit,
+          let nextDate = nextRoutineStatusWidgetTimelineDate(after: cursor, routines: routines) {
+        guard nextDate <= endDate else { break }
+
+        if let lastDate = dates.last,
+           nextDate.timeIntervalSince(lastDate) > 0.25 {
+            dates.append(nextDate)
+        }
+
+        cursor = nextDate
+    }
+
+    return dates
+}
+
+private func nextRoutineStatusWidgetTimelineDate(after date: Date, routines: [Routine]) -> Date? {
+    let snapshot = routineStatusSnapshot(at: date, routines: routines)
+    let threshold = date.addingTimeInterval(0.5)
+    var candidates: [Date] = []
+
+    if let boundaryDate = nextRoutineStatusChangeDate(after: date, routines: routines)?.addingTimeInterval(1),
+       boundaryDate > threshold {
+        candidates.append(boundaryDate)
+    }
+
+    if let countdownDate = nextWidgetCountdownDisplayChangeDate(after: date, endDate: snapshot.endDate),
+       countdownDate > threshold {
+        candidates.append(countdownDate)
+    }
+
+    return candidates.min()
+}
+
+private func nextWidgetCountdownDisplayChangeDate(after date: Date, endDate: Date?) -> Date? {
+    guard let endDate else { return nil }
+
+    let wholeSeconds = widgetRemainingWholeSeconds(until: endDate, at: date)
+    guard wholeSeconds > 0 else { return nil }
+
+    let nextWholeSeconds: Int
+    if wholeSeconds > 60 {
+        let minutes = Int(ceil(Double(wholeSeconds) / 60.0))
+        nextWholeSeconds = (minutes - 1) * 60
+    } else if wholeSeconds == 60 {
+        nextWholeSeconds = 59
+    } else {
+        return nil
+    }
+
+    return endDate.addingTimeInterval(-Double(nextWholeSeconds))
+}
+
+private func widgetRemainingCountdownText(date: Date, snapshot: RoutineStatusSnapshot) -> String {
+    guard let endDate = snapshot.endDate else {
+        return snapshot.remainingMinuteText
+    }
+
+    let wholeSeconds = widgetRemainingWholeSeconds(until: endDate, at: date)
+
+    guard wholeSeconds >= 60 else {
+        return "\(wholeSeconds) sec"
+    }
+
+    let minutes = Int(ceil(Double(wholeSeconds) / 60.0))
+    return routineDurationText(minutes: minutes)
+}
+
+private func widgetRemainingWholeSeconds(until endDate: Date, at date: Date) -> Int {
+    max(0, Int(ceil(endDate.timeIntervalSince(date))))
 }

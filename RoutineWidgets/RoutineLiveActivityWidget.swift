@@ -33,6 +33,7 @@ struct RoutineLiveActivityWidget: Widget {
                         .foregroundStyle(.white)
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
+                        .multilineTextAlignment(.trailing)
                         .frame(maxWidth: 116, alignment: .trailing)
                 }
 
@@ -101,6 +102,7 @@ private struct RoutineLiveActivityLockScreenView: View {
                         .monospacedDigit()
                         .lineLimit(1)
                         .minimumScaleFactor(0.72)
+                        .multilineTextAlignment(.trailing)
                         .frame(maxWidth: .infinity, alignment: .trailing)
 
                     Text("下一日程")
@@ -142,11 +144,14 @@ private struct LiveMinuteCountdownText: View {
     var body: some View {
         if let endDate = snapshot.endDate {
             LiveCountdownTimerText(
+                startDate: snapshot.startDate,
                 endDate: endDate,
                 presentation: presentation
             )
+            .frame(maxWidth: .infinity, alignment: .trailing)
         } else {
             Text(compact ? snapshot.compactRemainingMinuteText : snapshot.remainingMinuteText)
+                .frame(maxWidth: .infinity, alignment: .trailing)
         }
     }
 }
@@ -158,6 +163,7 @@ private enum LiveCountdownPresentation {
 }
 
 private struct LiveCountdownTimerText: View {
+    let startDate: Date?
     let endDate: Date
     let presentation: LiveCountdownPresentation
 
@@ -166,7 +172,7 @@ private struct LiveCountdownTimerText: View {
         case .lockScreen:
             LockScreenRelativeCountdownText(endDate: endDate)
         case .expandedIsland, .compactIsland:
-            IslandCountdownText(endDate: endDate, presentation: presentation)
+            IslandCountdownText(startDate: startDate, endDate: endDate, presentation: presentation)
         }
     }
 }
@@ -185,29 +191,28 @@ private struct LockScreenRelativeCountdownText: View {
 }
 
 private struct IslandCountdownText: View {
+    let startDate: Date?
     let endDate: Date
     let presentation: LiveCountdownPresentation
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { timeline in
-            Text(islandCountdownText(until: endDate, at: timeline.date))
+        if endDate <= Date.now {
+            Text("0:00")
+                .lineLimit(1)
+                .minimumScaleFactor(presentation.minimumScaleFactor)
+                .monospacedDigit()
+        } else if let interval = routineCountdownInterval(startDate: startDate, endDate: endDate) {
+            Text(timerInterval: interval, countsDown: true, showsHours: true)
+                .environment(\.locale, Locale(identifier: "en_US_POSIX"))
+                .lineLimit(1)
+                .minimumScaleFactor(presentation.minimumScaleFactor)
+                .monospacedDigit()
+        } else {
+            Text("0:00")
                 .lineLimit(1)
                 .minimumScaleFactor(presentation.minimumScaleFactor)
                 .monospacedDigit()
         }
-    }
-
-    private func islandCountdownText(until endDate: Date, at date: Date) -> String {
-        let seconds = max(endDate.timeIntervalSince(date), 0)
-        let minutes = seconds > 0 ? Int(ceil(seconds / 60)) : 0
-
-        guard minutes >= 60 else {
-            return "\(minutes)min"
-        }
-
-        let hours = minutes / 60
-        let remainingMinutes = minutes % 60
-        return String(format: "%d:%02d", hours, remainingMinutes)
     }
 }
 
