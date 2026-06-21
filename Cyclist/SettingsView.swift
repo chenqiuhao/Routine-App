@@ -99,7 +99,7 @@ struct SettingsView: View {
             isPresented: $isExporting,
             document: RoutineTextDocument(text: store.exportText()),
             contentType: .plainText,
-            defaultFilename: "DailyRoutine.txt"
+            defaultFilename: "CyclistSchedule.txt"
         ) { _ in }
         .alert("导入失败", isPresented: importErrorIsPresented) {
             Button("好", role: .cancel) { importErrorMessage = nil }

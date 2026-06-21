@@ -3,7 +3,7 @@ import UIKit
 import UserNotifications
 
 @main
-struct RoutineAppApp: App {
+struct CyclistApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {

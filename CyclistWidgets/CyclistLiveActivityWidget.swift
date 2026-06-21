@@ -2,10 +2,10 @@ import ActivityKit
 import SwiftUI
 import WidgetKit
 
-struct RoutineLiveActivityWidget: Widget {
+struct CyclistLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
-        ActivityConfiguration(for: RoutineActivityAttributes.self) { context in
-            RoutineLiveActivityLockScreenView(snapshot: context.state.snapshot)
+        ActivityConfiguration(for: CyclistActivityAttributes.self) { context in
+            CyclistLiveActivityLockScreenView(snapshot: context.state.snapshot)
                 .activityBackgroundTint(Color(.systemBackground))
                 .activitySystemActionForegroundColor(context.state.snapshot.tintColor)
         } dynamicIsland: { context in
@@ -74,7 +74,7 @@ struct RoutineLiveActivityWidget: Widget {
     }
 }
 
-private struct RoutineLiveActivityLockScreenView: View {
+private struct CyclistLiveActivityLockScreenView: View {
     let snapshot: RoutineStatusSnapshot
 
     var body: some View {

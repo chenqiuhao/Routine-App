@@ -180,9 +180,9 @@ enum AppThemeMode: String, CaseIterable, Identifiable {
 }
 
 enum RoutineSharedStorage {
-    static let appGroupIdentifier = "group.com.codex.routineapp"
-    static let routinesKey = "RoutineApp.routines.v1"
-    static let liveActivityEnabledKey = "RoutineApp.liveActivity.enabled"
+    static let appGroupIdentifier = "group.com.codex.cyclist"
+    static let routinesKey = "Cyclist.routines.v1"
+    static let liveActivityEnabledKey = "Cyclist.liveActivity.enabled"
 
     private static let appGroupDefaults = UserDefaults(suiteName: appGroupIdentifier)
     static let defaults: UserDefaults = appGroupDefaults ?? .standard
@@ -593,7 +593,7 @@ final class RoutineStore {
 
     func exportText() -> String {
         var lines = [
-            "# Daily Routine",
+            "# Cyclist",
             "# start\tend\tname\tnotify\tcolorID\thue\tsaturation\tbrightness"
         ]
 
@@ -791,7 +791,7 @@ final class RoutineStore {
 }
 
 enum RoutineNotificationScheduler {
-    private static let identifierPrefix = "RoutineApp.routine."
+    private static let identifierPrefix = "Cyclist.routine."
 
     static func refresh(for routines: [Routine]) async {
         let notificationRoutines = routines.filter(\.notifies)

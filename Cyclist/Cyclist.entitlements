@@ -4,7 +4,7 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.codex.routineapp</string>
+		<string>group.com.codex.cyclist</string>
 	</array>
 </dict>
 </plist>

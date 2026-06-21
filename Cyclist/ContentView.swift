@@ -3,7 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var store = RoutineStore()
-    @AppStorage("RoutineApp.themeMode") private var themeMode = AppThemeMode.system
+    @AppStorage("Cyclist.themeMode") private var themeMode = AppThemeMode.system
     @State private var liveActivityEnabled = RoutineSharedStorage.loadLiveActivityEnabled()
     @State private var liveActivitySyncTask: Task<Void, Never>?
     @State private var liveActivityBoundarySyncTask: Task<Void, Never>?
@@ -69,7 +69,7 @@ struct ContentView: View {
                 guard !Task.isCancelled else { return }
             }
 
-            await RoutineLiveActivityController.sync(routines: routines, enabled: enabled)
+            await CyclistLiveActivityController.sync(routines: routines, enabled: enabled)
             await MainActor.run {
                 scheduleNextLiveActivityBoundarySync(routines: routines, enabled: enabled)
             }
@@ -117,7 +117,7 @@ struct ScheduleView: View {
                     Spacer()
                 }
 
-                RoutineRingView(routines: routines)
+                CyclistRingView(routines: routines)
                     .frame(width: max(260, side), height: max(260, side))
                     .padding(.horizontal, 8)
             }

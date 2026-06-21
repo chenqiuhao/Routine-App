@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct RoutineRingView: View {
+struct CyclistRingView: View {
     @Environment(\.colorScheme) private var colorScheme
 
     let routines: [Routine]
@@ -636,7 +636,7 @@ private func uprightTangentRotation(for angle: Double) -> Double {
 }
 
 #Preview {
-    RoutineRingView(
+    CyclistRingView(
         routines: [
             Routine(name: "睡觉", startMinutes: 22 * 60, endMinutes: 6 * 60, color: RoutineColor.defaultColor(at: 9)),
             Routine(name: "测试", startMinutes: 1 * 60, endMinutes: 5 * 60, color: RoutineColor.defaultColor(at: 9)),

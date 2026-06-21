@@ -2,7 +2,7 @@ import ActivityKit
 import Foundation
 
 @MainActor
-enum RoutineLiveActivityController {
+enum CyclistLiveActivityController {
     private static var lastSubmittedKey: ActivitySnapshotKey?
 
     static func sync(routines: [Routine], enabled: Bool) async {
@@ -22,14 +22,14 @@ enum RoutineLiveActivityController {
             return
         }
 
-        let state = RoutineActivityAttributes.ContentState(snapshot: snapshot, routines: routines)
+        let state = CyclistActivityAttributes.ContentState(snapshot: snapshot, routines: routines)
         let content = ActivityContent(
             state: state,
             staleDate: nextRoutineStatusChangeDate(after: Date(), routines: routines)
         )
         let key = ActivitySnapshotKey(snapshot: snapshot, routines: routines)
 
-        if let activity = Activity<RoutineActivityAttributes>.activities.first {
+        if let activity = Activity<CyclistActivityAttributes>.activities.first {
             if ActivitySnapshotKey(snapshot: activity.content.state.snapshot, routines: activity.content.state.routines) == key || lastSubmittedKey == key {
                 lastSubmittedKey = key
                 return
@@ -45,7 +45,7 @@ enum RoutineLiveActivityController {
 
         do {
             _ = try Activity.request(
-                attributes: RoutineActivityAttributes(createdAt: Date()),
+                attributes: CyclistActivityAttributes(createdAt: Date()),
                 content: content,
                 pushType: nil
             )
@@ -56,7 +56,7 @@ enum RoutineLiveActivityController {
     }
 
     private static func endAll() async {
-        for activity in Activity<RoutineActivityAttributes>.activities {
+        for activity in Activity<CyclistActivityAttributes>.activities {
             await activity.end(
                 ActivityContent(state: activity.content.state, staleDate: nil),
                 dismissalPolicy: .immediate

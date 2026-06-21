@@ -1,7 +1,7 @@
 import ActivityKit
 import Foundation
 
-struct RoutineActivityAttributes: ActivityAttributes {
+struct CyclistActivityAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {
         var snapshot: RoutineStatusSnapshot
         var routines: [Routine]

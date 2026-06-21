@@ -1,25 +1,25 @@
 import SwiftUI
 import WidgetKit
 
-struct RoutineStatusEntry: TimelineEntry {
+struct CyclistStatusEntry: TimelineEntry {
     let date: Date
     let snapshot: RoutineStatusSnapshot
 }
 
-struct RoutineStatusProvider: TimelineProvider {
-    func placeholder(in context: Context) -> RoutineStatusEntry {
+struct CyclistStatusProvider: TimelineProvider {
+    func placeholder(in context: Context) -> CyclistStatusEntry {
         let date = Date()
-        return RoutineStatusEntry(
+        return CyclistStatusEntry(
             date: date,
             snapshot: routineStatusSnapshot(at: date, routines: RoutineSharedStorage.sampleRoutines)
         )
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (RoutineStatusEntry) -> Void) {
+    func getSnapshot(in context: Context, completion: @escaping (CyclistStatusEntry) -> Void) {
         completion(entry(at: Date()))
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<RoutineStatusEntry>) -> Void) {
+    func getTimeline(in context: Context, completion: @escaping (Timeline<CyclistStatusEntry>) -> Void) {
         let now = Date()
         let routines = RoutineSharedStorage.loadRoutines()
         let entries = routineStatusWidgetTimelineDates(from: now, routines: routines)
@@ -28,50 +28,50 @@ struct RoutineStatusProvider: TimelineProvider {
         completion(Timeline(entries: entries, policy: .after(refreshDate)))
     }
 
-    private func entry(at date: Date) -> RoutineStatusEntry {
+    private func entry(at date: Date) -> CyclistStatusEntry {
         entry(at: date, routines: RoutineSharedStorage.loadRoutines())
     }
 
-    private func entry(at date: Date, routines: [Routine]) -> RoutineStatusEntry {
-        RoutineStatusEntry(
+    private func entry(at date: Date, routines: [Routine]) -> CyclistStatusEntry {
+        CyclistStatusEntry(
             date: date,
             snapshot: routineStatusSnapshot(at: date, routines: routines)
         )
     }
 
     private func nextTimelineRefreshDate(after date: Date, routines: [Routine]) -> Date {
-        nextRoutineStatusWidgetTimelineDate(after: date, routines: routines)
+        nextCyclistStatusWidgetTimelineDate(after: date, routines: routines)
             ?? date.addingTimeInterval(60 * 60)
     }
 }
 
-struct RoutineStatusWidget: Widget {
-    let kind = "RoutineStatusWidget"
+struct CyclistStatusWidget: Widget {
+    let kind = "CyclistStatusWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: RoutineStatusProvider()) { entry in
-            RoutineStatusWidgetView(entry: entry)
+        StaticConfiguration(kind: kind, provider: CyclistStatusProvider()) { entry in
+            CyclistStatusWidgetView(entry: entry)
         }
-        .configurationDisplayName("Daily Routine")
+        .configurationDisplayName("Cyclist")
         .description("查看当前日程、倒计时和下一日程。")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
 
-private struct RoutineStatusWidgetView: View {
+private struct CyclistStatusWidgetView: View {
     @Environment(\.widgetFamily) private var family
 
-    let entry: RoutineStatusEntry
+    let entry: CyclistStatusEntry
 
     var body: some View {
-        RoutineStatusCard(date: entry.date, snapshot: entry.snapshot, compact: family == .systemSmall)
+        CyclistStatusCard(date: entry.date, snapshot: entry.snapshot, compact: family == .systemSmall)
             .containerBackground(for: .widget) {
                 Color(.systemBackground)
             }
     }
 }
 
-struct RoutineStatusCard: View {
+struct CyclistStatusCard: View {
     let date: Date
     let snapshot: RoutineStatusSnapshot
     let compact: Bool
@@ -223,7 +223,7 @@ private func routineStatusWidgetTimelineDates(
     let endDate = date.addingTimeInterval(horizon)
 
     while dates.count < limit,
-          let nextDate = nextRoutineStatusWidgetTimelineDate(after: cursor, routines: routines) {
+          let nextDate = nextCyclistStatusWidgetTimelineDate(after: cursor, routines: routines) {
         guard nextDate <= endDate else { break }
 
         if let lastDate = dates.last,
@@ -237,7 +237,7 @@ private func routineStatusWidgetTimelineDates(
     return dates
 }
 
-private func nextRoutineStatusWidgetTimelineDate(after date: Date, routines: [Routine]) -> Date? {
+private func nextCyclistStatusWidgetTimelineDate(after date: Date, routines: [Routine]) -> Date? {
     let snapshot = routineStatusSnapshot(at: date, routines: routines)
     let threshold = date.addingTimeInterval(0.5)
     var candidates: [Date] = []
